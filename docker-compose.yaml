@@ -1,0 +1,32 @@
+services:
+  # Iarnet Global 服务（前后端一体化）
+  iarnet-global:
+    image: iarnet-global:latest
+    container_name: iarnet-global
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # 挂载数据目录（持久化）
+      - ./data:/app/data
+      # 可选：挂载配置文件（如果需要自定义配置）
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "3000:3000"   # 前端 Next.js 端口
+      - "8080:8080"   # 后端 HTTP API 端口
+      - "50010:50010" # RPC 服务端口
+    networks:
+      - iarnet-global-network
+    restart: unless-stopped
+    environment:
+      # 后端 URL（前端使用）
+      - BACKEND_URL=http://localhost:8080
+    labels:
+      - "app.name=iarnet-global"
+      - "app.type=fullstack"
+
+networks:
+  iarnet-global-network:
+    driver: bridge
+    name: iarnet-global-network
+

@@ -24,9 +24,20 @@ type DatabaseConfig struct {
 // TransportConfig Transport 配置
 type TransportConfig struct {
 	HTTP HTTPConfig `yaml:"http"` // HTTP server configuration
+	RPC  RPCConfig  `yaml:"rpc"`  // RPC server configurationsdu
 }
 
 // HTTPConfig HTTP 服务器配置
 type HTTPConfig struct {
 	Port int `yaml:"port"` // e.g., 8080 - HTTP server port
+}
+
+// RPCConfig RPC 服务器配置
+type RPCConfig struct {
+	Registry RPCRegistryConfig `yaml:"registry"` // Registry RPC server configuration
+}
+
+// RPCRegistryConfig Registry RPC 服务器配置
+type RPCRegistryConfig struct {
+	Port int `yaml:"port"` // e.g., 50010 - Registry RPC server port
 }

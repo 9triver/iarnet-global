@@ -8,6 +8,7 @@ import (
 	"github.com/9triver/iarnet-global/internal/domain/registry"
 	"github.com/9triver/iarnet-global/internal/intra/repository"
 	"github.com/9triver/iarnet-global/internal/transport/http"
+	"github.com/9triver/iarnet-global/internal/transport/rpc"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,10 +22,21 @@ type IarnetGlobal struct {
 	DomainRepo      repository.DomainRepo
 	// Transport 层
 	HTTPServer *http.Server
+	RPCManager *rpc.Manager
 }
 
 // Start 启动所有服务
 func (ig *IarnetGlobal) Start(ctx context.Context) error {
+	// 启动 RPC 服务器
+	if ig.RPCManager != nil {
+		if err := ig.RPCManager.Start(); err != nil {
+			return fmt.Errorf("failed to start RPC server: %w", err)
+		}
+		logrus.Info("RPC server started")
+	} else {
+		return fmt.Errorf("rpc server is not initialized")
+	}
+
 	// 启动 HTTP 服务器
 	if ig.HTTPServer != nil {
 		ig.HTTPServer.Start()
@@ -42,6 +54,12 @@ func (ig *IarnetGlobal) Stop() error {
 	if ig.HTTPServer != nil {
 		ig.HTTPServer.Stop()
 		logrus.Info("HTTP server stopped")
+	}
+
+	// 停止 RPC 服务器
+	if ig.RPCManager != nil {
+		ig.RPCManager.Stop()
+		logrus.Info("RPC server stopped")
 	}
 
 	logrus.Info("All services stopped")

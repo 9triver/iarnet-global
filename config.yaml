@@ -2,6 +2,9 @@ transport:
   # HTTP 服务器配置
   http:
     port: 8080  # HTTP 服务器端口
+  rpc:
+    registry:
+      port: 50010  # Registry RPC 服务器端口
 
 database:
   domain_db_path: "./data/domain.db"

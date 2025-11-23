@@ -35,5 +35,9 @@ func ApplyDefaults(cfg *Config) {
 	if cfg.Transport.HTTP.Port == 0 {
 		cfg.Transport.HTTP.Port = 8080 // 默认 HTTP 端口
 	}
-}
 
+	// RPC 配置默认值
+	if cfg.Transport.RPC.Registry.Port == 0 {
+		cfg.Transport.RPC.Registry.Port = 50010 // 默认 Registry RPC 端口
+	}
+}
