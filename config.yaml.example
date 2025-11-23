@@ -1,0 +1,11 @@
+# Iarnet Global 配置文件示例
+
+# 数据目录
+data_dir: "./data"
+
+# Transport 配置
+transport:
+  # HTTP 服务器配置
+  http:
+    port: 8080  # HTTP 服务器端口
+

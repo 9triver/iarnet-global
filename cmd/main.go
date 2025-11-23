@@ -1,0 +1,55 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/9triver/iarnet-global/internal/bootstrap"
+	"github.com/9triver/iarnet-global/internal/config"
+	"github.com/9triver/iarnet-global/internal/util"
+	"github.com/sirupsen/logrus"
+)
+
+func main() {
+	configFile := flag.String("config", "config.yaml", "Path to config file")
+	flag.Parse()
+
+	cfg, err := config.LoadConfig(*configFile)
+	if err != nil {
+		log.Fatalf("Load config: %v", err)
+	}
+	util.InitLogger()
+
+	// 使用 Bootstrap 初始化所有模块
+	iarnetGlobal, err := bootstrap.Initialize(cfg)
+	if err != nil {
+		logrus.Fatalf("Failed to initialize: %v", err)
+	}
+	defer iarnetGlobal.Stop()
+
+	// 创建上下文用于优雅关闭
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// 启动所有服务
+	if err := iarnetGlobal.Start(ctx); err != nil {
+		logrus.Fatalf("Failed to start services: %v", err)
+	}
+
+	logrus.Info("Iarnet Global started successfully")
+
+	// 优雅关闭
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	<-sigCh
+	logrus.Info("Shutting down...")
+
+	// 取消上下文以停止所有服务
+	cancel()
+
+	logrus.Info("Shutdown complete")
+}
