@@ -6,6 +6,7 @@ import (
 
 	"github.com/9triver/iarnet-global/internal/config"
 	"github.com/9triver/iarnet-global/internal/domain/registry"
+	"github.com/9triver/iarnet-global/internal/intra/repository"
 	"github.com/9triver/iarnet-global/internal/transport/http"
 	"github.com/sirupsen/logrus"
 )
@@ -16,7 +17,8 @@ type IarnetGlobal struct {
 
 	// 领域服务
 	RegistryService registry.Service
-
+	DomainManager   *registry.Manager
+	DomainRepo      repository.DomainRepo
 	// Transport 层
 	HTTPServer *http.Server
 }

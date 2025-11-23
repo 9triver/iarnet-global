@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { registryAPI, APIError } from "@/lib/api"
+import type { DomainItem } from "@/lib/types"
 
 // 资源域接口
 interface ResourceDomain {
@@ -49,62 +50,92 @@ export default function HomePage() {
   const [domainDescription, setDomainDescription] = useState("")
   const [creating, setCreating] = useState(false)
 
-  // 模拟数据 - 实际应该从 API 获取
+  // Mock 数据
+  const mockDomains: ResourceDomain[] = [
+    {
+      id: "domain-1",
+      name: "生产环境域",
+      description: "生产环境的算力资源域",
+      nodeCount: 5,
+      onlineNodes: 4,
+      resourceTags: {
+        cpu: 128,
+        gpu: 16,
+        memory: 512 * 1024 * 1024 * 1024, // 512GB
+        camera: true,
+      },
+      lastUpdated: new Date().toISOString(),
+    },
+    {
+      id: "domain-2",
+      name: "开发环境域",
+      description: "开发测试环境的算力资源域",
+      nodeCount: 3,
+      onlineNodes: 3,
+      resourceTags: {
+        cpu: 64,
+        gpu: 8,
+        memory: 256 * 1024 * 1024 * 1024, // 256GB
+        camera: false,
+      },
+      lastUpdated: new Date().toISOString(),
+    },
+    {
+      id: "domain-3",
+      name: "边缘计算域",
+      description: "边缘节点的算力资源域",
+      nodeCount: 8,
+      onlineNodes: 7,
+      resourceTags: {
+        cpu: 32,
+        gpu: 4,
+        memory: 128 * 1024 * 1024 * 1024, // 128GB
+        camera: true,
+      },
+      lastUpdated: new Date().toISOString(),
+    },
+  ]
+
+  // 将 API 返回的 DomainItem 转换为前端需要的 ResourceDomain 格式
+  const convertDomainItem = (item: DomainItem): ResourceDomain => {
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      nodeCount: item.node_count,
+      onlineNodes: item.online_nodes,
+      resourceTags: {
+        cpu: item.resource_tags.cpu ? 1 : undefined,
+        gpu: item.resource_tags.gpu ? 1 : undefined,
+        memory: item.resource_tags.memory ? 1 : undefined,
+        camera: item.resource_tags.camera || undefined,
+      },
+      lastUpdated: item.updated_at,
+    }
+  }
+
+  // 从 API 获取域数据，并在真实数据后追加 mock 数据
   const fetchDomains = async () => {
     try {
-      // TODO: 替换为实际 API 调用
-      // const response = await fetch('/api/domains')
-      // const data = await response.json()
+      setLoading(true)
       
-      // 模拟数据
-      const mockDomains: ResourceDomain[] = [
-        {
-          id: "domain-1",
-          name: "生产环境域",
-          description: "生产环境的算力资源域",
-          nodeCount: 5,
-          onlineNodes: 4,
-          resourceTags: {
-            cpu: 128,
-            gpu: 16,
-            memory: 512 * 1024 * 1024 * 1024, // 512GB
-            camera: true,
-          },
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          id: "domain-2",
-          name: "开发环境域",
-          description: "开发测试环境的算力资源域",
-          nodeCount: 3,
-          onlineNodes: 3,
-          resourceTags: {
-            cpu: 64,
-            gpu: 8,
-            memory: 256 * 1024 * 1024 * 1024, // 256GB
-            camera: false,
-          },
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          id: "domain-3",
-          name: "边缘计算域",
-          description: "边缘节点的算力资源域",
-          nodeCount: 8,
-          onlineNodes: 7,
-          resourceTags: {
-            cpu: 32,
-            gpu: 4,
-            memory: 128 * 1024 * 1024 * 1024, // 128GB
-            camera: true,
-          },
-          lastUpdated: new Date().toISOString(),
-        },
-      ]
+      // 调用真实 API
+      let realDomains: ResourceDomain[] = []
+      try {
+        const response = await registryAPI.getDomains()
+        realDomains = response.domains.map(convertDomainItem)
+      } catch (error) {
+        console.error('Failed to fetch domains from API:', error)
+        // API 调用失败时，只使用 mock 数据
+      }
       
-      setDomains(mockDomains)
+      // 在真实数据后追加 mock 数据
+      const allDomains = [...realDomains, ...mockDomains]
+      setDomains(allDomains)
     } catch (error) {
       console.error('Failed to fetch domains:', error)
+      // 出错时使用 mock 数据
+      setDomains(mockDomains)
     } finally {
       setLoading(false)
     }

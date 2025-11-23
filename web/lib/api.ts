@@ -1,5 +1,5 @@
 // API 客户端工具函数
-import type { CreateDomainRequest, CreateDomainResponse } from "./types"
+import type { CreateDomainRequest, CreateDomainResponse, GetDomainsResponse } from "./types"
 
 const API_BASE = "/api"
 
@@ -66,9 +66,15 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
 }
 
 export const registryAPI = {
+  // 获取所有域
+  getDomains: () =>
+    apiRequest<GetDomainsResponse>("/registry/domains", {
+      method: "GET",
+    }),
+
   // 创建域
   createDomain: (request: CreateDomainRequest) =>
-    apiRequest<CreateDomainResponse>("/domains", {
+    apiRequest<CreateDomainResponse>("/registry/domains", {
       method: "POST",
       body: JSON.stringify(request),
     }),

@@ -14,8 +14,8 @@ import (
 // RegisterRoutes 注册域相关的 HTTP 路由
 func RegisterRoutes(router *mux.Router, service registry.Service) {
 	api := NewAPI(service)
-	router.HandleFunc("/api/domains", api.handleGetDomains).Methods("GET")
-	router.HandleFunc("/api/domains", api.handleCreateDomain).Methods("POST")
+	router.HandleFunc("/registry/domains", api.handleGetDomains).Methods("GET")
+	router.HandleFunc("/registry/domains", api.handleCreateDomain).Methods("POST")
 	// router.HandleFunc("/api/domains/{id}", api.handleGetDomain).Methods("GET")
 	// router.HandleFunc("/api/domains/{id}", api.handleUpdateDomain).Methods("PUT")
 	// router.HandleFunc("/api/domains/{id}", api.handleDeleteDomain).Methods("DELETE")
@@ -64,12 +64,13 @@ func (api *API) handleGetDomains(w http.ResponseWriter, r *http.Request) {
 			NodeCount:   stats.TotalNodes,
 			OnlineNodes: stats.OnlineNodes,
 			ResourceTags: ResourceTagsResponse{
-				CPU:    domain.ResourceTags != nil && domain.ResourceTags.CPU != nil,
-				GPU:    domain.ResourceTags != nil && domain.ResourceTags.GPU != nil,
-				Memory: domain.ResourceTags != nil && domain.ResourceTags.Memory != nil,
-				Camera: domain.ResourceTags != nil && domain.ResourceTags.Camera != nil && *domain.ResourceTags.Camera,
+				CPU:    domain.ResourceTags.CPU,
+				GPU:    domain.ResourceTags.GPU,
+				Memory: domain.ResourceTags.Memory,
+				Camera: domain.ResourceTags.Camera,
 			},
-			LastUpdated: domain.UpdatedAt.Format(time.RFC3339),
+			CreatedAt: domain.CreatedAt.Format(time.RFC3339),
+			UpdatedAt: domain.UpdatedAt.Format(time.RFC3339),
 		}
 
 		resp.Domains = append(resp.Domains, item)
@@ -147,13 +148,14 @@ func (api *API) handleGetDomain(w http.ResponseWriter, r *http.Request) {
 		Name:        domain.Name,
 		Description: domain.Description,
 		ResourceTags: ResourceTagsResponse{
-			CPU:    domain.ResourceTags != nil && domain.ResourceTags.CPU != nil,
-			GPU:    domain.ResourceTags != nil && domain.ResourceTags.GPU != nil,
-			Memory: domain.ResourceTags != nil && domain.ResourceTags.Memory != nil,
-			Camera: domain.ResourceTags != nil && domain.ResourceTags.Camera != nil && *domain.ResourceTags.Camera,
+			CPU:    domain.ResourceTags != nil && domain.ResourceTags.CPU,
+			GPU:    domain.ResourceTags != nil && domain.ResourceTags.GPU,
+			Memory: domain.ResourceTags != nil && domain.ResourceTags.Memory,
+			Camera: domain.ResourceTags != nil && domain.ResourceTags.Camera,
 		},
-		Nodes:       convertNodes(nodes),
-		LastUpdated: domain.UpdatedAt.Format(time.RFC3339),
+		Nodes:     convertNodes(nodes),
+		CreatedAt: domain.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: domain.UpdatedAt.Format(time.RFC3339),
 	}
 
 	response.Success(resp).WriteJSON(w)
@@ -256,10 +258,10 @@ func convertNodes(nodes []*registry.Node) []NodeItem {
 		// 转换资源标签
 		if node.ResourceTags != nil {
 			item.ResourceTags = &NodeResourceTagsResponse{
-				CPU:    node.ResourceTags.CPU,
-				GPU:    node.ResourceTags.GPU,
-				Memory: node.ResourceTags.Memory,
-				Camera: node.ResourceTags.Camera,
+				// CPU:    &node.ResourceTags.CPU,
+				// GPU:    &node.ResourceTags.GPU,
+				// Memory: &node.ResourceTags.Memory,
+				// Camera: &node.ResourceTags.Camera,
 			}
 		}
 

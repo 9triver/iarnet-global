@@ -2,8 +2,10 @@ package registry
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/9triver/iarnet-global/internal/intra/repository"
 	"github.com/9triver/iarnet-global/internal/util"
 )
 
@@ -30,6 +32,9 @@ type Service interface {
 
 	// GetDomainStats 获取域的统计信息（节点数量等）
 	GetDomainStats(ctx context.Context, domainID DomainID) (*DomainStats, error)
+
+	// LoadDomains 从 repository 加载所有域数据到 manager
+	LoadDomains(ctx context.Context) error
 }
 
 // DomainStats 域统计信息
@@ -41,13 +46,15 @@ type DomainStats struct {
 }
 
 type service struct {
-	manager *Manager
+	manager    *Manager
+	domainRepo repository.DomainRepo
 }
 
 // NewService 创建域注册服务
-func NewService(manager *Manager) Service {
+func NewService(manager *Manager, domainRepo repository.DomainRepo) Service {
 	return &service{
-		manager: manager,
+		manager:    manager,
+		domainRepo: domainRepo,
 	}
 }
 
@@ -66,9 +73,26 @@ func (s *service) CreateDomain(ctx context.Context, name, description string) (*
 		ID:          domainID,
 		Name:        name,
 		Description: description,
-		NodeIDs:     make([]NodeID, 0),
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ResourceTags: &ResourceTags{
+			CPU:    false,
+			GPU:    false,
+			Memory: false,
+			Camera: false,
+		},
+		NodeIDs:   make([]NodeID, 0),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err := s.domainRepo.CreateDomain(ctx, &repository.DomainDAO{
+		ID:          domain.ID,
+		Name:        domain.Name,
+		Description: domain.Description,
+		CreatedAt:   domain.CreatedAt,
+		UpdatedAt:   domain.UpdatedAt,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to persist domain to repository: %w", err)
 	}
 
 	// 添加到管理器
@@ -143,4 +167,42 @@ func (s *service) GetDomainStats(ctx context.Context, domainID DomainID) (*Domai
 	}
 
 	return stats, nil
+}
+
+// LoadDomains 从 repository 加载所有域数据到 manager
+func (s *service) LoadDomains(ctx context.Context) error {
+	// 从 repository 获取所有域
+	domainDAOs, err := s.domainRepo.GetAllDomains(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load domains from repository: %w", err)
+	}
+
+	// 将 DomainDAO 转换为 Domain 并添加到 manager
+	for _, dao := range domainDAOs {
+		domain := &Domain{
+			ID:          DomainID(dao.ID),
+			Name:        dao.Name,
+			Description: dao.Description,
+			NodeIDs:     make([]NodeID, 0), // 节点信息需要从其他地方加载
+			ResourceTags: &ResourceTags{
+				CPU:    false,
+				GPU:    false,
+				Memory: false,
+				Camera: false,
+			},
+			CreatedAt: dao.CreatedAt,
+			UpdatedAt: dao.UpdatedAt,
+		}
+
+		// 添加到管理器（如果已存在则跳过，避免重复加载）
+		if err := s.manager.AddDomain(domain); err != nil {
+			// 如果域已存在，记录警告但继续处理其他域
+			if err == ErrDomainAlreadyExists {
+				continue
+			}
+			return fmt.Errorf("failed to add domain %s to manager: %w", domain.ID, err)
+		}
+	}
+
+	return nil
 }

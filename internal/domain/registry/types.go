@@ -10,27 +10,36 @@ type NodeID = string
 
 // ResourceTags 资源标签，描述域或节点支持的计算资源类型
 type ResourceTags struct {
-	// CPU 支持的 CPU 核心数（可选，如果存在表示支持 CPU）
-	CPU *int64 `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	// GPU 支持的 GPU 数量（可选，如果存在表示支持 GPU）
-	GPU *int64 `json:"gpu,omitempty" yaml:"gpu,omitempty"`
-	// Memory 支持的内存容量，单位：字节（可选，如果存在表示支持内存）
-	Memory *int64 `json:"memory,omitempty" yaml:"memory,omitempty"`
-	// Camera 是否支持摄像头（可选，如果为 true 表示支持摄像头）
-	Camera *bool `json:"camera,omitempty" yaml:"camera,omitempty"`
+	CPU    bool `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	GPU    bool `json:"gpu,omitempty" yaml:"gpu,omitempty"`
+	Memory bool `json:"memory,omitempty" yaml:"memory,omitempty"`
+	Camera bool `json:"camera,omitempty" yaml:"camera,omitempty"`
+}
+
+func NewEmptyResourceTags() *ResourceTags {
+	return NewResourceTags(false, false, false, false)
+}
+
+func NewResourceTags(cpu, gpu, memory, camera bool) *ResourceTags {
+	return &ResourceTags{
+		CPU:    cpu,
+		GPU:    gpu,
+		Memory: memory,
+		Camera: camera,
+	}
 }
 
 // HasResource 检查是否支持指定的资源类型
 func (rt *ResourceTags) HasResource(resourceType string) bool {
 	switch resourceType {
 	case "cpu":
-		return rt.CPU != nil
+		return rt.CPU
 	case "gpu":
-		return rt.GPU != nil
+		return rt.GPU
 	case "memory":
-		return rt.Memory != nil
+		return rt.Memory
 	case "camera":
-		return rt.Camera != nil && *rt.Camera
+		return rt.Camera
 	default:
 		return false
 	}
@@ -109,54 +118,54 @@ func (d *Domain) GetTotalNodeCount() int {
 	return len(d.NodeIDs)
 }
 
-// UpdateResourceTags 更新域的资源标签（汇总所有节点的资源标签）
-func (d *Domain) UpdateResourceTags(getNodeResourceTags func(NodeID) *ResourceTags) {
-	// 汇总所有节点的资源标签
-	aggregatedTags := &ResourceTags{}
+// // UpdateResourceTags 更新域的资源标签（汇总所有节点的资源标签）
+// func (d *Domain) UpdateResourceTags(getNodeResourceTags func(NodeID) *ResourceTags) {
+// 	// 汇总所有节点的资源标签
+// 	aggregatedTags := &ResourceTags{}
 
-	for _, nodeID := range d.NodeIDs {
-		nodeTags := getNodeResourceTags(nodeID)
-		if nodeTags == nil {
-			continue
-		}
+// 	for _, nodeID := range d.NodeIDs {
+// 		nodeTags := getNodeResourceTags(nodeID)
+// 		if nodeTags == nil {
+// 			continue
+// 		}
 
-		// 汇总 CPU
-		if nodeTags.CPU != nil {
-			if aggregatedTags.CPU == nil {
-				aggregatedTags.CPU = new(int64)
-			}
-			*aggregatedTags.CPU += *nodeTags.CPU
-		}
+// 		// 汇总 CPU
+// 		if nodeTags.CPU != nil {
+// 			if aggregatedTags.CPU == nil {
+// 				aggregatedTags.CPU = new(int64)
+// 			}
+// 			*aggregatedTags.CPU += *nodeTags.CPU
+// 		}
 
-		// 汇总 GPU
-		if nodeTags.GPU != nil {
-			if aggregatedTags.GPU == nil {
-				aggregatedTags.GPU = new(int64)
-			}
-			*aggregatedTags.GPU += *nodeTags.GPU
-		}
+// 		// 汇总 GPU
+// 		if nodeTags.GPU != nil {
+// 			if aggregatedTags.GPU == nil {
+// 				aggregatedTags.GPU = new(int64)
+// 			}
+// 			*aggregatedTags.GPU += *nodeTags.GPU
+// 		}
 
-		// 汇总 Memory（取最大值，因为内存是容量概念）
-		if nodeTags.Memory != nil {
-			if aggregatedTags.Memory == nil {
-				aggregatedTags.Memory = new(int64)
-			}
-			if *nodeTags.Memory > *aggregatedTags.Memory {
-				*aggregatedTags.Memory = *nodeTags.Memory
-			}
-		}
+// 		// 汇总 Memory（取最大值，因为内存是容量概念）
+// 		if nodeTags.Memory != nil {
+// 			if aggregatedTags.Memory == nil {
+// 				aggregatedTags.Memory = new(int64)
+// 			}
+// 			if *nodeTags.Memory > *aggregatedTags.Memory {
+// 				*aggregatedTags.Memory = *nodeTags.Memory
+// 			}
+// 		}
 
-		// 汇总 Camera（任意节点支持即支持）
-		if nodeTags.Camera != nil && *nodeTags.Camera {
-			if aggregatedTags.Camera == nil {
-				aggregatedTags.Camera = new(bool)
-			}
-			*aggregatedTags.Camera = true
-		}
-	}
+// 		// 汇总 Camera（任意节点支持即支持）
+// 		if nodeTags.Camera != nil && *nodeTags.Camera {
+// 			if aggregatedTags.Camera == nil {
+// 				aggregatedTags.Camera = new(bool)
+// 			}
+// 			*aggregatedTags.Camera = true
+// 		}
+// 	}
 
-	d.ResourceTags = aggregatedTags
-}
+// 	d.ResourceTags = aggregatedTags
+// }
 
 // AddNode 添加节点到域
 func (d *Domain) AddNode(nodeID NodeID) {

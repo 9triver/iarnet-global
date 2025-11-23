@@ -229,8 +229,8 @@ func (m *Manager) GetNodeResourceTags(nodeID NodeID) *ResourceTags {
 
 // updateDomainResourceTags 更新域的资源标签
 func (m *Manager) updateDomainResourceTags(domain *Domain) {
-	domain.UpdateResourceTags(m.GetNodeResourceTags)
-	domain.UpdatedAt = time.Now()
+	// domain.UpdateResourceTags(m.GetNodeResourceTags)
+	// domain.UpdatedAt = time.Now()
 }
 
 // Start 启动管理器（预留接口，用于后续扩展）
