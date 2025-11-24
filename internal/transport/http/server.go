@@ -8,6 +8,7 @@ import (
 
 	"github.com/9triver/iarnet-global/internal/config"
 	"github.com/9triver/iarnet-global/internal/domain/registry"
+	logsAPI "github.com/9triver/iarnet-global/internal/transport/http/logs"
 	registryAPI "github.com/9triver/iarnet-global/internal/transport/http/registry"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -27,6 +28,7 @@ type Server struct {
 func NewServer(opts Options) *Server {
 	router := mux.NewRouter()
 	registryAPI.RegisterRoutes(router, opts.RegistryService)
+	logsAPI.RegisterRoutes(router)
 
 	return &Server{
 		Server: &http.Server{

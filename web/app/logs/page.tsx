@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, RefreshCw, Search, Download, Trash2, Filter, X } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import { AutoSizer, CellMeasurer, CellMeasurerCache, List, type ListRowProps } from "react-virtualized"
+import { logsAPI, type LogEntry as APILogEntry } from "@/lib/api"
 
 // 日志级别样式定义 - 与 iarnet 应用日志保持一致
 const LOG_LEVEL_STYLES: Record<string, { badge: string; dot: string; label: string }> = {
@@ -19,16 +20,24 @@ const LOG_LEVEL_STYLES: Record<string, { badge: string; dot: string; label: stri
   info: { badge: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-500", label: "信息" },
 }
 
-// 日志条目接口
+// 日志条目接口（前端使用）
 interface LogEntry {
   id: string
   timestamp: string
-  level: "debug" | "info" | "warn" | "error"
+  level: "debug" | "info" | "warn" | "error" | "trace" | "fatal" | "panic"
   message: string
   source?: string
   domainId?: string
   nodeId?: string
   details?: string
+  caller?: LogCallerInfo
+}
+
+// 调用者信息类型
+interface LogCallerInfo {
+  file?: string
+  line?: number
+  function?: string
 }
 
 // 基础日志条目类型 - 用于 LogListViewer
@@ -38,6 +47,7 @@ type BasicLogEntry = {
   level?: string
   message: string
   details?: string
+  caller?: LogCallerInfo
 }
 
 // LogListViewer 组件 - 与 iarnet 应用日志完全一致
@@ -95,6 +105,13 @@ const LogListViewer = ({ logs }: { logs: BasicLogEntry[] }) => {
                         {log.timestamp ? formatDateTime(log.timestamp) : "—"}
                       </span>
                     </div>
+                    <div className="text-[11px] text-muted-foreground font-mono flex items-center gap-2">
+                      {log.caller && log.caller.function && (
+                        <span className="hidden md:inline">
+                          {log.caller.function}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="mt-2 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words font-mono">
                     {log.message}
@@ -122,68 +139,50 @@ export default function LogsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [logLines, setLogLines] = useState(100)
 
-  // 模拟数据 - 实际应该从 API 获取
+  // 从后端 API 获取日志
   const fetchLogs = async () => {
     try {
-      // TODO: 替换为实际 API 调用
-      // const response = await fetch('/api/logs')
-      // const data = await response.json()
-      
-      // 模拟数据
-      const mockLogs: LogEntry[] = [
-        {
-          id: "log-1",
-          timestamp: new Date().toISOString(),
-          level: "info",
-          message: "成功连接到资源域 domain-1",
-          source: "scheduler",
-          domainId: "domain-1",
-        },
-        {
-          id: "log-2",
-          timestamp: new Date(Date.now() - 1000).toISOString(),
-          level: "info",
-          message: "发现新的 iarnet 节点: 192.168.1.100:50051",
-          source: "discovery",
-          nodeId: "node-1",
-        },
-        {
-          id: "log-3",
-          timestamp: new Date(Date.now() - 2000).toISOString(),
-          level: "warn",
-          message: "节点 node-3 连接超时，标记为离线",
-          source: "scheduler",
-          nodeId: "node-3",
-        },
-        {
-          id: "log-4",
-          timestamp: new Date(Date.now() - 3000).toISOString(),
-          level: "error",
-          message: "无法连接到资源域 domain-2: 连接被拒绝",
-          source: "scheduler",
-          domainId: "domain-2",
-        },
-        {
-          id: "log-5",
-          timestamp: new Date(Date.now() - 4000).toISOString(),
-          level: "debug",
-          message: "执行资源调度决策: 选择节点 node-1 处理任务 task-123",
-          source: "scheduler",
-          nodeId: "node-1",
-        },
-        {
-          id: "log-6",
-          timestamp: new Date(Date.now() - 5000).toISOString(),
-          level: "info",
-          message: "资源域 domain-1 的资源标签已更新: CPU=128, GPU=16",
-          source: "scheduler",
-          domainId: "domain-1",
-        },
-      ]
-      
-      setLogs(prev => [...mockLogs, ...prev].slice(0, 1000)) // 保持最新1000条
+      setLoading(true)
+      const level = logFilter !== 'all' ? logFilter : undefined
+      const response = await logsAPI.getLogs({
+        start: 0,
+        limit: logLines,
+        level,
+      })
+
+      // 转换后端日志格式为前端格式
+      const convertedLogs: LogEntry[] = response.logs.map((log: APILogEntry, index: number) => {
+        // 构建 details 字符串（只包含 fields 信息，caller 单独处理）
+        const detailsParts: string[] = []
+        if (log.fields && Object.keys(log.fields).length > 0) {
+          const fieldsStr = Object.entries(log.fields)
+            .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+            .join(", ")
+          detailsParts.push(`Fields: ${fieldsStr}`)
+        }
+        const details = detailsParts.length > 0 ? detailsParts.join("\n") : undefined
+
+        // 提取 caller 信息
+        const caller = log.caller ? {
+          file: log.caller.file,
+          line: log.caller.line,
+          function: log.caller.function,
+        } : undefined
+
+        return {
+          id: `${log.timestamp}-${index}`,
+          timestamp: log.timestamp,
+          level: log.level.toLowerCase() as LogEntry["level"],
+          message: log.message,
+          details,
+          caller,
+        }
+      })
+
+      setLogs(convertedLogs)
     } catch (error) {
       console.error('Failed to fetch logs:', error)
+      // 发生错误时保持现有日志，不清空
     } finally {
       setLoading(false)
     }
@@ -191,7 +190,8 @@ export default function LogsPage() {
 
   useEffect(() => {
     fetchLogs()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logFilter, logLines])
 
   useEffect(() => {
     if (!autoRefresh) return
@@ -201,24 +201,21 @@ export default function LogsPage() {
     }, 2000) // 每2秒刷新一次日志
 
     return () => clearInterval(interval)
-  }, [autoRefresh])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRefresh, logFilter, logLines])
 
-  // 过滤日志
+  // 过滤日志（后端已按级别过滤，这里只做搜索过滤）
   const filteredLogs = useMemo(() => {
     const searchTerm = searchQuery.trim().toLowerCase()
-    const levelFilter = logFilter.toLowerCase()
+    if (!searchTerm) {
+      return logs
+    }
 
     return logs.filter((log) => {
-      if (levelFilter !== "all" && log.level?.toLowerCase() !== levelFilter) {
-        return false
-      }
-      if (searchTerm) {
-        const content = `${log.message ?? ""} ${log.source ?? ""} ${log.domainId ?? ""} ${log.nodeId ?? ""}`.toLowerCase()
-        return content.includes(searchTerm)
-      }
-      return true
+      const content = `${log.message ?? ""} ${log.details ?? ""}`.toLowerCase()
+      return content.includes(searchTerm)
     })
-  }, [logs, logFilter, searchQuery])
+  }, [logs, searchQuery])
 
   // 转换为 BasicLogEntry 格式
   const logEntries: BasicLogEntry[] = useMemo(() => {
@@ -228,12 +225,19 @@ export default function LogsPage() {
       level: log.level,
       message: log.message,
       details: log.details,
+      caller: log.caller,
     }))
   }, [filteredLogs])
 
-  const handleClearLogs = () => {
+  const handleClearLogs = async () => {
     if (confirm('确定要清空所有日志吗？')) {
-      setLogs([])
+      try {
+        await logsAPI.clearLogs()
+        setLogs([])
+      } catch (error) {
+        console.error('Failed to clear logs:', error)
+        alert('清空日志失败，请稍后重试')
+      }
     }
   }
 
@@ -262,7 +266,7 @@ export default function LogsPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-playfair font-bold text-foreground mb-2">调度日志</h1>
+              <h1 className="text-3xl font-playfair font-bold text-foreground mb-2">调度器日志</h1>
               <p className="text-muted-foreground">查看全局调度器的运行日志</p>
             </div>
 
@@ -302,7 +306,7 @@ export default function LogsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>调度日志</CardTitle>
+                  <CardTitle>调度器日志</CardTitle>
                   <CardDescription>
                     查看全局调度器的实时日志输出
                   </CardDescription>

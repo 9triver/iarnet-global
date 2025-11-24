@@ -15,7 +15,7 @@ const navigation = [
     description: "查看和管理资源域",
   },
   {
-    name: "调度日志",
+    name: "调度器日志",
     href: "/logs",
     icon: FileText,
     description: "查看全局调度器日志",

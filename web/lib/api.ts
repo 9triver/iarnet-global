@@ -85,3 +85,49 @@ export const registryAPI = {
       body: JSON.stringify(request),
     }),
 }
+
+// 日志相关类型
+export interface LogEntry {
+  timestamp: string
+  level: string
+  message: string
+  fields?: Record<string, any>
+  caller?: {
+    file: string
+    line: number
+    function: string
+  }
+}
+
+export interface GetLogsResponse {
+  logs: LogEntry[]
+  total: number
+  start: number
+  limit: number
+}
+
+export const logsAPI = {
+  // 获取日志
+  getLogs: (params?: { start?: number; limit?: number; level?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params?.start !== undefined) {
+      queryParams.append("start", params.start.toString())
+    }
+    if (params?.limit !== undefined) {
+      queryParams.append("limit", params.limit.toString())
+    }
+    if (params?.level) {
+      queryParams.append("level", params.level)
+    }
+    const query = queryParams.toString()
+    return apiRequest<GetLogsResponse>(`/logs${query ? `?${query}` : ""}`, {
+      method: "GET",
+    })
+  },
+
+  // 清空日志
+  clearLogs: () =>
+    apiRequest<void>("/logs/clear", {
+      method: "POST",
+    }),
+}
