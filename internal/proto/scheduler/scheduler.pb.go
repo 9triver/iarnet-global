@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v6.31.1
-// source: resource/scheduler/scheduler.proto
+// source: scheduler.proto
 
 package scheduler
 
@@ -62,11 +62,11 @@ func (x ComponentStatus) String() string {
 }
 
 func (ComponentStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_resource_scheduler_scheduler_proto_enumTypes[0].Descriptor()
+	return file_scheduler_proto_enumTypes[0].Descriptor()
 }
 
 func (ComponentStatus) Type() protoreflect.EnumType {
-	return &file_resource_scheduler_scheduler_proto_enumTypes[0]
+	return &file_scheduler_proto_enumTypes[0]
 }
 
 func (x ComponentStatus) Number() protoreflect.EnumNumber {
@@ -75,7 +75,7 @@ func (x ComponentStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComponentStatus.Descriptor instead.
 func (ComponentStatus) EnumDescriptor() ([]byte, []int) {
-	return file_resource_scheduler_scheduler_proto_rawDescGZIP(), []int{0}
+	return file_scheduler_proto_rawDescGZIP(), []int{0}
 }
 
 // DeployComponentRequest 部署 component 请求
@@ -96,7 +96,7 @@ type DeployComponentRequest struct {
 
 func (x *DeployComponentRequest) Reset() {
 	*x = DeployComponentRequest{}
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[0]
+	mi := &file_scheduler_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -108,7 +108,7 @@ func (x *DeployComponentRequest) String() string {
 func (*DeployComponentRequest) ProtoMessage() {}
 
 func (x *DeployComponentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[0]
+	mi := &file_scheduler_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -121,7 +121,7 @@ func (x *DeployComponentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeployComponentRequest.ProtoReflect.Descriptor instead.
 func (*DeployComponentRequest) Descriptor() ([]byte, []int) {
-	return file_resource_scheduler_scheduler_proto_rawDescGZIP(), []int{0}
+	return file_scheduler_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *DeployComponentRequest) GetRuntimeEnv() string {
@@ -173,7 +173,7 @@ type DeployComponentResponse struct {
 
 func (x *DeployComponentResponse) Reset() {
 	*x = DeployComponentResponse{}
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[1]
+	mi := &file_scheduler_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -185,7 +185,7 @@ func (x *DeployComponentResponse) String() string {
 func (*DeployComponentResponse) ProtoMessage() {}
 
 func (x *DeployComponentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[1]
+	mi := &file_scheduler_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -198,7 +198,7 @@ func (x *DeployComponentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeployComponentResponse.ProtoReflect.Descriptor instead.
 func (*DeployComponentResponse) Descriptor() ([]byte, []int) {
-	return file_resource_scheduler_scheduler_proto_rawDescGZIP(), []int{1}
+	return file_scheduler_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DeployComponentResponse) GetSuccess() bool {
@@ -260,7 +260,7 @@ type ComponentInfo struct {
 
 func (x *ComponentInfo) Reset() {
 	*x = ComponentInfo{}
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[2]
+	mi := &file_scheduler_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -272,7 +272,7 @@ func (x *ComponentInfo) String() string {
 func (*ComponentInfo) ProtoMessage() {}
 
 func (x *ComponentInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[2]
+	mi := &file_scheduler_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -285,7 +285,7 @@ func (x *ComponentInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComponentInfo.ProtoReflect.Descriptor instead.
 func (*ComponentInfo) Descriptor() ([]byte, []int) {
-	return file_resource_scheduler_scheduler_proto_rawDescGZIP(), []int{2}
+	return file_scheduler_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ComponentInfo) GetComponentId() string {
@@ -329,7 +329,7 @@ type GetDeploymentStatusRequest struct {
 
 func (x *GetDeploymentStatusRequest) Reset() {
 	*x = GetDeploymentStatusRequest{}
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[3]
+	mi := &file_scheduler_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -341,7 +341,7 @@ func (x *GetDeploymentStatusRequest) String() string {
 func (*GetDeploymentStatusRequest) ProtoMessage() {}
 
 func (x *GetDeploymentStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[3]
+	mi := &file_scheduler_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +354,7 @@ func (x *GetDeploymentStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeploymentStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetDeploymentStatusRequest) Descriptor() ([]byte, []int) {
-	return file_resource_scheduler_scheduler_proto_rawDescGZIP(), []int{3}
+	return file_scheduler_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetDeploymentStatusRequest) GetComponentId() string {
@@ -388,7 +388,7 @@ type GetDeploymentStatusResponse struct {
 
 func (x *GetDeploymentStatusResponse) Reset() {
 	*x = GetDeploymentStatusResponse{}
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[4]
+	mi := &file_scheduler_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -400,7 +400,7 @@ func (x *GetDeploymentStatusResponse) String() string {
 func (*GetDeploymentStatusResponse) ProtoMessage() {}
 
 func (x *GetDeploymentStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_resource_scheduler_scheduler_proto_msgTypes[4]
+	mi := &file_scheduler_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -413,7 +413,7 @@ func (x *GetDeploymentStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDeploymentStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetDeploymentStatusResponse) Descriptor() ([]byte, []int) {
-	return file_resource_scheduler_scheduler_proto_rawDescGZIP(), []int{4}
+	return file_scheduler_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetDeploymentStatusResponse) GetSuccess() bool {
@@ -444,11 +444,11 @@ func (x *GetDeploymentStatusResponse) GetComponent() *ComponentInfo {
 	return nil
 }
 
-var File_resource_scheduler_scheduler_proto protoreflect.FileDescriptor
+var File_scheduler_proto protoreflect.FileDescriptor
 
-const file_resource_scheduler_scheduler_proto_rawDesc = "" +
+const file_scheduler_proto_rawDesc = "" +
 	"\n" +
-	"\"resource/scheduler/scheduler.proto\x12\tscheduler\x1a\x17resource/resource.proto\"\xca\x01\n" +
+	"\x0fscheduler.proto\x12\tscheduler\x1a\x17resource/resource.proto\"\xca\x01\n" +
 	"\x16DeployComponentRequest\x12\x1f\n" +
 	"\vruntime_env\x18\x01 \x01(\tR\n" +
 	"runtimeEnv\x129\n" +
@@ -485,23 +485,23 @@ const file_resource_scheduler_scheduler_proto_rawDesc = "" +
 	"\x16COMPONENT_STATUS_ERROR\x10\x042\xd2\x01\n" +
 	"\x10SchedulerService\x12X\n" +
 	"\x0fDeployComponent\x12!.scheduler.DeployComponentRequest\x1a\".scheduler.DeployComponentResponse\x12d\n" +
-	"\x13GetDeploymentStatus\x12%.scheduler.GetDeploymentStatusRequest\x1a&.scheduler.GetDeploymentStatusResponseB=Z;github.com/9triver/iarnet-global/internal/proto/schedulerb\x06proto3"
+	"\x13GetDeploymentStatus\x12%.scheduler.GetDeploymentStatusRequest\x1a&.scheduler.GetDeploymentStatusResponseB;Z9github.com/9triver/iarnet-global/internal/proto/schedulerb\x06proto3"
 
 var (
-	file_resource_scheduler_scheduler_proto_rawDescOnce sync.Once
-	file_resource_scheduler_scheduler_proto_rawDescData []byte
+	file_scheduler_proto_rawDescOnce sync.Once
+	file_scheduler_proto_rawDescData []byte
 )
 
-func file_resource_scheduler_scheduler_proto_rawDescGZIP() []byte {
-	file_resource_scheduler_scheduler_proto_rawDescOnce.Do(func() {
-		file_resource_scheduler_scheduler_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_resource_scheduler_scheduler_proto_rawDesc), len(file_resource_scheduler_scheduler_proto_rawDesc)))
+func file_scheduler_proto_rawDescGZIP() []byte {
+	file_scheduler_proto_rawDescOnce.Do(func() {
+		file_scheduler_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_scheduler_proto_rawDesc), len(file_scheduler_proto_rawDesc)))
 	})
-	return file_resource_scheduler_scheduler_proto_rawDescData
+	return file_scheduler_proto_rawDescData
 }
 
-var file_resource_scheduler_scheduler_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_resource_scheduler_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_resource_scheduler_scheduler_proto_goTypes = []any{
+var file_scheduler_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_scheduler_proto_goTypes = []any{
 	(ComponentStatus)(0),                // 0: scheduler.ComponentStatus
 	(*DeployComponentRequest)(nil),      // 1: scheduler.DeployComponentRequest
 	(*DeployComponentResponse)(nil),     // 2: scheduler.DeployComponentResponse
@@ -510,7 +510,7 @@ var file_resource_scheduler_scheduler_proto_goTypes = []any{
 	(*GetDeploymentStatusResponse)(nil), // 5: scheduler.GetDeploymentStatusResponse
 	(*resource.Info)(nil),               // 6: resource.Info
 }
-var file_resource_scheduler_scheduler_proto_depIdxs = []int32{
+var file_scheduler_proto_depIdxs = []int32{
 	6, // 0: scheduler.DeployComponentRequest.resource_request:type_name -> resource.Info
 	3, // 1: scheduler.DeployComponentResponse.component:type_name -> scheduler.ComponentInfo
 	6, // 2: scheduler.ComponentInfo.resource_usage:type_name -> resource.Info
@@ -527,27 +527,27 @@ var file_resource_scheduler_scheduler_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_resource_scheduler_scheduler_proto_init() }
-func file_resource_scheduler_scheduler_proto_init() {
-	if File_resource_scheduler_scheduler_proto != nil {
+func init() { file_scheduler_proto_init() }
+func file_scheduler_proto_init() {
+	if File_scheduler_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_resource_scheduler_scheduler_proto_rawDesc), len(file_resource_scheduler_scheduler_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_scheduler_proto_rawDesc), len(file_scheduler_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_resource_scheduler_scheduler_proto_goTypes,
-		DependencyIndexes: file_resource_scheduler_scheduler_proto_depIdxs,
-		EnumInfos:         file_resource_scheduler_scheduler_proto_enumTypes,
-		MessageInfos:      file_resource_scheduler_scheduler_proto_msgTypes,
+		GoTypes:           file_scheduler_proto_goTypes,
+		DependencyIndexes: file_scheduler_proto_depIdxs,
+		EnumInfos:         file_scheduler_proto_enumTypes,
+		MessageInfos:      file_scheduler_proto_msgTypes,
 	}.Build()
-	File_resource_scheduler_scheduler_proto = out.File
-	file_resource_scheduler_scheduler_proto_goTypes = nil
-	file_resource_scheduler_scheduler_proto_depIdxs = nil
+	File_scheduler_proto = out.File
+	file_scheduler_proto_goTypes = nil
+	file_scheduler_proto_depIdxs = nil
 }
