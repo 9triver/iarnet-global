@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/9triver/iarnet-global/internal/domain/registry"
@@ -83,6 +84,9 @@ func (s *service) selectRandomNode(resourceReq *resourcepb.Info) (*registry.Node
 			if node.Address == "" {
 				continue
 			}
+			if len(resourceReq.Tags) > 0 && !nodeHasRequiredTags(node.ResourceTags, resourceReq.Tags) {
+				continue
+			}
 			if !hasSufficientResources(node.ResourceCapacity, resourceReq) {
 				continue
 			}
@@ -120,6 +124,40 @@ func hasSufficientResources(capacity *registry.ResourceCapacity, req *resourcepb
 	}
 	if available.GPU < req.Gpu {
 		return false
+	}
+	return true
+}
+
+func nodeHasRequiredTags(nodeTags *registry.ResourceTags, required []string) bool {
+	if len(required) == 0 {
+		return true
+	}
+	if nodeTags == nil {
+		return false
+	}
+
+	for _, tag := range required {
+		switch strings.ToLower(tag) {
+		case "cpu":
+			if !nodeTags.CPU {
+				return false
+			}
+		case "gpu":
+			if !nodeTags.GPU {
+				return false
+			}
+		case "memory":
+			if !nodeTags.Memory {
+				return false
+			}
+		case "camera":
+			if !nodeTags.Camera {
+				return false
+			}
+		default:
+			// 未知标签暂视为不满足
+			return false
+		}
 	}
 	return true
 }
