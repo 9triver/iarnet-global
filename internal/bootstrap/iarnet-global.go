@@ -27,6 +27,14 @@ type IarnetGlobal struct {
 
 // Start 启动所有服务
 func (ig *IarnetGlobal) Start(ctx context.Context) error {
+	// 启动 Registry Manager（启动节点超时检测）
+	if ig.DomainManager != nil {
+		if err := ig.DomainManager.Start(ctx); err != nil {
+			return fmt.Errorf("failed to start registry manager: %w", err)
+		}
+		logrus.Info("Registry manager started")
+	}
+
 	// 启动 RPC 服务器
 	if ig.RPCManager != nil {
 		if err := ig.RPCManager.Start(); err != nil {
@@ -60,6 +68,12 @@ func (ig *IarnetGlobal) Stop() error {
 	if ig.RPCManager != nil {
 		ig.RPCManager.Stop()
 		logrus.Info("RPC server stopped")
+	}
+
+	// 停止 Registry Manager
+	if ig.DomainManager != nil {
+		ig.DomainManager.Stop()
+		logrus.Info("Registry manager stopped")
 	}
 
 	logrus.Info("All services stopped")

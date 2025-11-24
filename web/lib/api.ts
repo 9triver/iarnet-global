@@ -1,5 +1,5 @@
 // API 客户端工具函数
-import type { CreateDomainRequest, CreateDomainResponse, GetDomainsResponse } from "./types"
+import type { CreateDomainRequest, CreateDomainResponse, GetDomainsResponse, GetDomainResponse } from "./types"
 
 const API_BASE = "/api"
 
@@ -69,6 +69,12 @@ export const registryAPI = {
   // 获取所有域
   getDomains: () =>
     apiRequest<GetDomainsResponse>("/registry/domains", {
+      method: "GET",
+    }),
+
+  // 获取单个域详情
+  getDomain: (id: string) =>
+    apiRequest<GetDomainResponse>(`/registry/domains/${id}`, {
       method: "GET",
     }),
 

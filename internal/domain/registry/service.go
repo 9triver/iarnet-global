@@ -7,6 +7,7 @@ import (
 
 	"github.com/9triver/iarnet-global/internal/intra/repository"
 	"github.com/9triver/iarnet-global/internal/util"
+	"github.com/sirupsen/logrus"
 )
 
 // Service 域注册服务接口
@@ -143,6 +144,7 @@ func (s *service) GetDomainNodes(ctx context.Context, domainID DomainID) ([]*Nod
 }
 
 // GetDomainStats 获取域的统计信息
+// 根据当前健康检查状况计算在线节点数
 func (s *service) GetDomainStats(ctx context.Context, domainID DomainID) (*DomainStats, error) {
 	domain, err := s.manager.GetDomain(domainID)
 	if err != nil {
@@ -150,12 +152,31 @@ func (s *service) GetDomainStats(ctx context.Context, domainID DomainID) (*Domai
 	}
 
 	stats := &DomainStats{
-		TotalNodes: len(domain.NodeIDs),
+		TotalNodes:   0, // 先初始化为0，只统计实际存在的节点
+		OnlineNodes:  0,
+		OfflineNodes: 0,
+		ErrorNodes:   0,
 	}
 
-	// 统计各状态节点数量
+	// 遍历域下的所有节点ID，但只统计实际存在的节点
 	for _, nodeID := range domain.NodeIDs {
+		// 检查节点是否实际存在（通过尝试获取节点来判断）
+		_, err := s.manager.GetNode(nodeID)
+		if err != nil {
+			// 节点不存在，跳过（可能已被清理但 NodeIDs 未同步更新）
+			logrus.Debugf("Node %s not found in manager, skipping from stats", nodeID)
+			continue
+		}
+
+		// 节点存在，统计到总数
+		stats.TotalNodes++
+
+		// 获取节点状态（节点存在时，获取实际状态）
 		status := s.manager.GetNodeStatus(nodeID)
+
+		logrus.Debugf("Node %s status: %s (domain: %s)", nodeID, status, domainID)
+
+		// 根据节点的实际状态统计
 		switch status {
 		case NodeStatusOnline:
 			stats.OnlineNodes++
@@ -163,8 +184,15 @@ func (s *service) GetDomainStats(ctx context.Context, domainID DomainID) (*Domai
 			stats.OfflineNodes++
 		case NodeStatusError:
 			stats.ErrorNodes++
+		default:
+			// 未知状态，默认为离线
+			logrus.Warnf("Unknown node status for node %s: %s, treating as offline", nodeID, status)
+			stats.OfflineNodes++
 		}
 	}
+
+	logrus.Infof("Domain stats: id=%s, total=%d, online=%d, offline=%d, error=%d, node_ids=%v",
+		domainID, stats.TotalNodes, stats.OnlineNodes, stats.OfflineNodes, stats.ErrorNodes, domain.NodeIDs)
 
 	return stats, nil
 }
@@ -177,13 +205,21 @@ func (s *service) LoadDomains(ctx context.Context) error {
 		return fmt.Errorf("failed to load domains from repository: %w", err)
 	}
 
+	if len(domainDAOs) == 0 {
+		logrus.Info("No domains found in database, starting with empty registry")
+		return nil
+	}
+
+	logrus.Infof("Loading %d domain(s) from database...", len(domainDAOs))
+
 	// 将 DomainDAO 转换为 Domain 并添加到 manager
+	loadedCount := 0
 	for _, dao := range domainDAOs {
 		domain := &Domain{
 			ID:          DomainID(dao.ID),
 			Name:        dao.Name,
 			Description: dao.Description,
-			NodeIDs:     make([]NodeID, 0), // 节点信息需要从其他地方加载
+			NodeIDs:     make([]NodeID, 0), // 节点信息在运行时动态管理，不持久化
 			ResourceTags: &ResourceTags{
 				CPU:    false,
 				GPU:    false,
@@ -198,11 +234,16 @@ func (s *service) LoadDomains(ctx context.Context) error {
 		if err := s.manager.AddDomain(domain); err != nil {
 			// 如果域已存在，记录警告但继续处理其他域
 			if err == ErrDomainAlreadyExists {
+				logrus.Warnf("Domain %s already exists in manager, skipping", domain.ID)
 				continue
 			}
 			return fmt.Errorf("failed to add domain %s to manager: %w", domain.ID, err)
 		}
+
+		loadedCount++
+		logrus.Debugf("Loaded domain: id=%s, name=%s", domain.ID, domain.Name)
 	}
 
+	logrus.Infof("Successfully loaded %d domain(s) from database", loadedCount)
 	return nil
 }

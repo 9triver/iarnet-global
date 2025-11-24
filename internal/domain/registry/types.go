@@ -57,6 +57,20 @@ const (
 	NodeStatusError NodeStatus = "error"
 )
 
+// ResourceCapacity 资源容量信息
+type ResourceCapacity struct {
+	Total     *ResourceInfo `json:"total,omitempty" yaml:"total,omitempty"`         // 总资源
+	Used      *ResourceInfo `json:"used,omitempty" yaml:"used,omitempty"`           // 已使用资源
+	Available *ResourceInfo `json:"available,omitempty" yaml:"available,omitempty"` // 可用资源
+}
+
+// ResourceInfo 资源信息
+type ResourceInfo struct {
+	CPU    int64 `json:"cpu" yaml:"cpu"`       // CPU millicores (毫核)
+	Memory int64 `json:"memory" yaml:"memory"` // Memory bytes (字节)
+	GPU    int64 `json:"gpu" yaml:"gpu"`       // GPU count (数量)
+}
+
 // Node iarnet 节点信息
 type Node struct {
 	// ID 节点唯一标识符
@@ -73,6 +87,8 @@ type Node struct {
 	Status NodeStatus `json:"status" yaml:"status"`
 	// ResourceTags 节点支持的资源标签
 	ResourceTags *ResourceTags `json:"resource_tags,omitempty" yaml:"resource_tags,omitempty"`
+	// ResourceCapacity 节点资源容量信息
+	ResourceCapacity *ResourceCapacity `json:"resource_capacity,omitempty" yaml:"resource_capacity,omitempty"`
 	// LastSeen 最后活跃时间
 	LastSeen time.Time `json:"last_seen" yaml:"last_seen"`
 	// CreatedAt 创建时间

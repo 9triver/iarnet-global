@@ -47,9 +47,9 @@ func (s *Server) RegisterNode(ctx context.Context, req *registrypb.RegisterNodeR
 		ID:           registry.NodeID(req.NodeId),
 		DomainID:     registry.DomainID(req.DomainId),
 		Name:         req.NodeName,
-		Address:      "",    // 地址在健康检查时更新
-		IsHead:       false, // 默认不是 head 节点
-		Status:       registry.NodeStatusOffline,
+		Address:      "",                        // 地址在健康检查时更新
+		IsHead:       false,                     // 默认不是 head 节点
+		Status:       registry.NodeStatusOnline, // 刚注册的节点设置为在线状态
 		ResourceTags: registry.NewEmptyResourceTags(),
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -82,39 +82,61 @@ func (s *Server) HealthCheck(ctx context.Context, req *registrypb.HealthCheckReq
 	nodeID := registry.NodeID(req.NodeId)
 	domainID := registry.DomainID(req.DomainId)
 
+	// 记录接收到的健康检查请求详情
+	statusStr := req.Status.String()
+	logrus.Infof("Received health check request: node_id=%s, domain_id=%s, status=%s (proto value: %d), address=%s",
+		req.NodeId, req.DomainId, statusStr, int32(req.Status), req.Address)
+
 	// 检查节点是否存在，如果不存在则自动注册
 	node, err := s.manager.GetNode(nodeID)
 	if err != nil {
 		// 节点不存在，尝试自动注册
 		_, err := s.manager.GetDomain(domainID)
 		if err != nil {
+			logrus.Warnf("Health check failed: domain not found: node_id=%s, domain_id=%s", req.NodeId, req.DomainId)
 			return nil, fmt.Errorf("domain not found: %w", err)
 		}
 
-		// 创建新节点
+		// 创建新节点（自动注册）
+		// 如果请求中的状态是 online，则使用 online；否则默认设置为 online（因为节点正在发送健康检查）
+		nodeStatus := convertProtoNodeStatus(req.Status)
+		if nodeStatus != registry.NodeStatusOnline {
+			// 如果请求状态不是 online，但节点正在发送健康检查，说明节点是活跃的，设置为 online
+			nodeStatus = registry.NodeStatusOnline
+		}
+
 		node = &registry.Node{
-			ID:           nodeID,
-			DomainID:     domainID,
-			Name:         req.NodeId, // 使用 node_id 作为默认名称
-			Address:      req.Address,
-			IsHead:       req.IsHead,
-			Status:       convertProtoNodeStatus(req.Status),
-			ResourceTags: convertProtoResourceTags(req.ResourceTags),
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			LastSeen:     time.Now(),
+			ID:               nodeID,
+			DomainID:         domainID,
+			Name:             req.NodeId, // 使用 node_id 作为默认名称
+			Address:          req.Address,
+			IsHead:           req.IsHead,
+			Status:           nodeStatus,
+			ResourceTags:     convertProtoResourceTags(req.ResourceTags),
+			ResourceCapacity: convertProtoResourceCapacity(req.ResourceCapacity),
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
+			LastSeen:         time.Now(),
 		}
 
 		if err := s.manager.AddNode(node); err != nil {
+			logrus.Errorf("Failed to auto-register node during health check: node_id=%s, domain_id=%s, error=%v",
+				req.NodeId, req.DomainId, err)
 			return nil, fmt.Errorf("failed to auto-register node: %w", err)
 		}
 
-		logrus.Infof("Node auto-registered during health check: id=%s, domain=%s", req.NodeId, req.DomainId)
+		logrus.Infof("Node auto-registered during health check: id=%s, domain=%s, status=%s, address=%s",
+			req.NodeId, req.DomainId, req.Status, req.Address)
 	} else {
 		// 更新现有节点
+		oldStatus := node.Status
+		newStatus := convertProtoNodeStatus(req.Status)
+		logrus.Infof("Updating node status: node_id=%s, old_status=%s, new_status=%s (from proto status: %s)",
+			req.NodeId, oldStatus, newStatus, req.Status.String())
+
 		err := s.manager.UpdateNode(nodeID, func(n *registry.Node) {
 			// 更新状态
-			n.Status = convertProtoNodeStatus(req.Status)
+			n.Status = newStatus
 			n.LastSeen = time.Now()
 			n.UpdatedAt = time.Now()
 
@@ -128,18 +150,33 @@ func (s *Server) HealthCheck(ctx context.Context, req *registrypb.HealthCheckReq
 				n.ResourceTags = convertProtoResourceTags(req.ResourceTags)
 			}
 
+			// 更新资源容量（如果提供）
+			if req.ResourceCapacity != nil {
+				n.ResourceCapacity = convertProtoResourceCapacity(req.ResourceCapacity)
+			}
+
 			// 更新 head 节点状态
 			if req.IsHead {
 				n.IsHead = true
 			}
 		})
 		if err != nil {
+			logrus.Errorf("Failed to update node during health check: node_id=%s, error=%v", req.NodeId, err)
 			return nil, fmt.Errorf("failed to update node: %w", err)
 		}
 
 		// 更新节点状态（确保状态同步）
-		if err := s.manager.UpdateNodeStatus(nodeID, convertProtoNodeStatus(req.Status)); err != nil {
+		if err := s.manager.UpdateNodeStatus(nodeID, newStatus); err != nil {
 			logrus.Warnf("Failed to update node status: %v", err)
+		}
+
+		// 记录状态变化
+		if oldStatus != newStatus {
+			logrus.Infof("Node status changed: id=%s, domain=%s, old_status=%s, new_status=%s, address=%s",
+				req.NodeId, req.DomainId, oldStatus, newStatus, req.Address)
+		} else {
+			logrus.Infof("Node health check: id=%s, domain=%s, status=%s, address=%s, isHead=%v",
+				req.NodeId, req.DomainId, req.Status, req.Address, req.IsHead)
 		}
 	}
 
@@ -151,6 +188,9 @@ func (s *Server) HealthCheck(ctx context.Context, req *registrypb.HealthCheckReq
 		StatusCode:                 "success",
 		Message:                    "Health check processed successfully",
 	}
+
+	logrus.Infof("Health check response sent: node_id=%s, domain_id=%s, recommended_interval=%ds",
+		req.NodeId, req.DomainId, response.RecommendedIntervalSeconds)
 
 	return response, nil
 }
@@ -175,4 +215,39 @@ func convertProtoResourceTags(tags *registrypb.ResourceTags) *registry.ResourceT
 		return registry.NewEmptyResourceTags()
 	}
 	return registry.NewResourceTags(tags.Cpu, tags.Gpu, tags.Memory, tags.Camera)
+}
+
+// convertProtoResourceCapacity 将 proto ResourceCapacity 转换为 domain ResourceCapacity
+func convertProtoResourceCapacity(capacity *registrypb.ResourceCapacity) *registry.ResourceCapacity {
+	if capacity == nil {
+		return nil
+	}
+
+	result := &registry.ResourceCapacity{}
+
+	if capacity.Total != nil {
+		result.Total = &registry.ResourceInfo{
+			CPU:    capacity.Total.Cpu,
+			Memory: capacity.Total.Memory,
+			GPU:    capacity.Total.Gpu,
+		}
+	}
+
+	if capacity.Used != nil {
+		result.Used = &registry.ResourceInfo{
+			CPU:    capacity.Used.Cpu,
+			Memory: capacity.Used.Memory,
+			GPU:    capacity.Used.Gpu,
+		}
+	}
+
+	if capacity.Available != nil {
+		result.Available = &registry.ResourceInfo{
+			CPU:    capacity.Available.Cpu,
+			Memory: capacity.Available.Memory,
+			GPU:    capacity.Available.Gpu,
+		}
+	}
+
+	return result
 }

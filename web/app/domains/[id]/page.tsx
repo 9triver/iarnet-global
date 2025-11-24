@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowLeft, Cpu, MemoryStick, Camera, RefreshCw, Server, Activity, CheckCircle, XCircle, AlertTriangle, Crown } from "lucide-react"
 import { formatMemory, formatNumber, formatRelativeTime, formatDateTime } from "@/lib/utils"
+import { registryAPI, APIError } from "@/lib/api"
+import type { GetDomainResponse, NodeItem } from "@/lib/types"
 
-// iarnet 节点接口
+// iarnet 节点接口（前端组件使用的格式）
 interface IarnetNode {
   id: string
   name: string
@@ -26,15 +28,15 @@ interface IarnetNode {
   }
 }
 
-// 资源域详情接口
+// 资源域详情接口（前端组件使用的格式）
 interface DomainDetail {
   id: string
   name: string
   description?: string
   resourceTags: {
-    cpu?: number
-    gpu?: number
-    memory?: number
+    cpu?: boolean
+    gpu?: boolean
+    memory?: boolean
     camera?: boolean
   }
   nodes: IarnetNode[]
@@ -52,95 +54,44 @@ export default function DomainDetailPage() {
 
   const fetchDomainDetail = async () => {
     try {
-      // TODO: 替换为实际 API 调用
-      // const response = await fetch(`/api/domains/${domainId}`)
-      // const data = await response.json()
+      setLoading(true)
+      const data = await registryAPI.getDomain(domainId)
       
-      // 模拟数据
-      const mockDomain: DomainDetail = {
-        id: domainId,
-        name: "生产环境域",
-        description: "生产环境的算力资源域",
+      // 转换 API 响应数据为前端组件期望的格式
+      const domainDetail: DomainDetail = {
+        id: data.id,
+        name: data.name,
+        description: data.description || "",
         resourceTags: {
-          cpu: 128,
-          gpu: 16,
-          memory: 512 * 1024 * 1024 * 1024, // 512GB
-          camera: true,
+          cpu: data.resource_tags.cpu,
+          gpu: data.resource_tags.gpu,
+          memory: data.resource_tags.memory,
+          camera: data.resource_tags.camera,
         },
-        nodes: [
-          {
-            id: "node-1",
-            name: "生产节点-1",
-            address: "192.168.1.100:50051",
-            status: "online",
-            lastSeen: new Date().toISOString(),
-            isHead: true, // head 节点
-            resourceTags: {
-              cpu: 32,
-              gpu: 4,
-              memory: 128 * 1024 * 1024 * 1024,
-              camera: true,
-            },
-          },
-          {
-            id: "node-2",
-            name: "生产节点-2",
-            address: "192.168.1.101:50051",
-            status: "online",
-            lastSeen: new Date().toISOString(),
-            resourceTags: {
-              cpu: 32,
-              gpu: 4,
-              memory: 128 * 1024 * 1024 * 1024,
-              camera: false,
-            },
-          },
-          {
-            id: "node-3",
-            name: "生产节点-3",
-            address: "192.168.1.102:50051",
-            status: "offline",
-            lastSeen: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-            resourceTags: {
-              cpu: 32,
-              gpu: 4,
-              memory: 128 * 1024 * 1024 * 1024,
-              camera: true,
-            },
-          },
-          {
-            id: "node-4",
-            name: "生产节点-4",
-            address: "192.168.1.103:50051",
-            status: "online",
-            lastSeen: new Date().toISOString(),
-            resourceTags: {
-              cpu: 16,
-              gpu: 2,
-              memory: 64 * 1024 * 1024 * 1024,
-              camera: false,
-            },
-          },
-          {
-            id: "node-5",
-            name: "生产节点-5",
-            address: "192.168.1.104:50051",
-            status: "error",
-            lastSeen: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-            resourceTags: {
-              cpu: 16,
-              gpu: 2,
-              memory: 64 * 1024 * 1024 * 1024,
-              camera: false,
-            },
-          },
-        ],
-        lastUpdated: new Date().toISOString(),
+        nodes: data.nodes.map((node: NodeItem) => ({
+          id: node.id,
+          name: node.name,
+          address: node.address,
+          status: node.status as "online" | "offline" | "error",
+          lastSeen: node.last_seen,
+          isHead: node.is_head,
+          resourceTags: node.resource_tags ? {
+            cpu: node.resource_tags.cpu,
+            gpu: node.resource_tags.gpu,
+            memory: node.resource_tags.memory,
+            camera: node.resource_tags.camera,
+          } : undefined,
+        })),
+        lastUpdated: data.updated_at,
       }
       
-      setDomain(mockDomain)
+      setDomain(domainDetail)
     } catch (error) {
       console.error('Failed to fetch domain detail:', error)
+      if (error instanceof APIError && error.status === 404) {
+        // 域不存在，设置为 null 以显示错误页面
+        setDomain(null)
+      }
     } finally {
       setLoading(false)
     }
@@ -266,19 +217,19 @@ export default function DomainDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                {domain.resourceTags.cpu !== undefined && (
+                {domain.resourceTags.cpu && (
                   <Badge variant="outline" className="flex items-center gap-2 px-3 py-2 text-sm">
                     <Cpu className="h-4 w-4" />
                     CPU
                   </Badge>
                 )}
-                {domain.resourceTags.gpu !== undefined && (
+                {domain.resourceTags.gpu && (
                   <Badge variant="outline" className="flex items-center gap-2 px-3 py-2 text-sm">
                     <Activity className="h-4 w-4" />
                     GPU
                   </Badge>
                 )}
-                {domain.resourceTags.memory !== undefined && (
+                {domain.resourceTags.memory && (
                   <Badge variant="outline" className="flex items-center gap-2 px-3 py-2 text-sm">
                     <MemoryStick className="h-4 w-4" />
                     内存
@@ -290,7 +241,7 @@ export default function DomainDetailPage() {
                     摄像头
                   </Badge>
                 )}
-                {Object.keys(domain.resourceTags).length === 0 && (
+                {!domain.resourceTags.cpu && !domain.resourceTags.gpu && !domain.resourceTags.memory && !domain.resourceTags.camera && (
                   <span className="text-sm text-muted-foreground">暂无资源标签</span>
                 )}
               </div>
@@ -374,7 +325,10 @@ export default function DomainDetailPage() {
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             {getStatusIcon(node.status)}
-                            <div className="font-medium">{node.name}</div>
+                            <div className="flex flex-col">
+                              <div className="font-medium">{node.name}</div>
+                              <div className="text-xs text-muted-foreground font-mono">{node.id}</div>
+                            </div>
                             {node.isHead && (
                               <Badge variant="default" className="bg-blue-500 flex items-center gap-1">
                                 <Crown className="h-3 w-3" />

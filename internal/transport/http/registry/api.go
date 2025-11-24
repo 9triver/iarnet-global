@@ -16,10 +16,10 @@ func RegisterRoutes(router *mux.Router, service registry.Service) {
 	api := NewAPI(service)
 	router.HandleFunc("/registry/domains", api.handleGetDomains).Methods("GET")
 	router.HandleFunc("/registry/domains", api.handleCreateDomain).Methods("POST")
-	// router.HandleFunc("/api/domains/{id}", api.handleGetDomain).Methods("GET")
-	// router.HandleFunc("/api/domains/{id}", api.handleUpdateDomain).Methods("PUT")
-	// router.HandleFunc("/api/domains/{id}", api.handleDeleteDomain).Methods("DELETE")
-	// router.HandleFunc("/api/domains/{id}/nodes", api.handleGetDomainNodes).Methods("GET")
+	router.HandleFunc("/registry/domains/{id}", api.handleGetDomain).Methods("GET")
+	router.HandleFunc("/registry/domains/{id}", api.handleUpdateDomain).Methods("PUT")
+	router.HandleFunc("/registry/domains/{id}", api.handleDeleteDomain).Methods("DELETE")
+	router.HandleFunc("/registry/domains/{id}/nodes", api.handleGetDomainNodes).Methods("GET")
 }
 
 type API struct {
@@ -255,14 +255,51 @@ func convertNodes(nodes []*registry.Node) []NodeItem {
 			LastSeen: node.LastSeen.Format(time.RFC3339),
 		}
 
-		// 转换资源标签
-		if node.ResourceTags != nil {
-			item.ResourceTags = &NodeResourceTagsResponse{
-				// CPU:    &node.ResourceTags.CPU,
-				// GPU:    &node.ResourceTags.GPU,
-				// Memory: &node.ResourceTags.Memory,
-				// Camera: &node.ResourceTags.Camera,
+		// 转换资源标签和资源容量
+		// 优先使用 ResourceCapacity.Total 中的数值，如果没有则使用 ResourceTags 的 bool 值
+		resourceTags := &NodeResourceTagsResponse{}
+		hasResourceTags := false
+
+		// 从 ResourceCapacity 获取资源容量数值
+		if node.ResourceCapacity != nil && node.ResourceCapacity.Total != nil {
+			total := node.ResourceCapacity.Total
+			if total.CPU > 0 {
+				// CPU 从 millicores 转换为 cores（除以 1000）
+				cpuCores := total.CPU / 1000
+				resourceTags.CPU = &cpuCores
+				hasResourceTags = true
 			}
+			if total.GPU > 0 {
+				resourceTags.GPU = &total.GPU
+				hasResourceTags = true
+			}
+			if total.Memory > 0 {
+				resourceTags.Memory = &total.Memory
+				hasResourceTags = true
+			}
+		}
+
+		// 从 ResourceTags 获取资源标签（bool 值），主要用于 Camera
+		if node.ResourceTags != nil {
+			if node.ResourceTags.Camera {
+				camera := true
+				resourceTags.Camera = &camera
+				hasResourceTags = true
+			}
+			// 如果 ResourceCapacity 中没有数值，但 ResourceTags 中有标记，则使用标记
+			if resourceTags.CPU == nil && node.ResourceTags.CPU {
+				// 如果没有容量信息，但标记支持 CPU，则不设置具体数值（前端会显示标签但不显示数值）
+			}
+			if resourceTags.GPU == nil && node.ResourceTags.GPU {
+				// 如果没有容量信息，但标记支持 GPU，则不设置具体数值
+			}
+			if resourceTags.Memory == nil && node.ResourceTags.Memory {
+				// 如果没有容量信息，但标记支持 Memory，则不设置具体数值
+			}
+		}
+
+		if hasResourceTags {
+			item.ResourceTags = resourceTags
 		}
 
 		items = append(items, item)
