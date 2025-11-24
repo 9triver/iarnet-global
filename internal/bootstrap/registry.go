@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/9triver/iarnet-global/internal/domain/registry"
+	domainscheduler "github.com/9triver/iarnet-global/internal/domain/scheduler"
 	"github.com/9triver/iarnet-global/internal/intra/repository"
 	"github.com/sirupsen/logrus"
 )
@@ -32,6 +33,7 @@ func bootstrapRegistry(ig *IarnetGlobal) error {
 	ig.RegistryService = service
 	ig.DomainManager = manager
 	ig.DomainRepo = domainRepo
+	ig.SchedulerService = domainscheduler.NewService(manager)
 	logrus.Info("Registry module initialized")
 	return nil
 }

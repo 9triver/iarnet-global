@@ -22,8 +22,9 @@ func bootstrapTransport(ig *IarnetGlobal) error {
 
 	// 创建 RPC 服务器管理器
 	ig.RPCManager = rpc.NewManager(rpc.Options{
-		RegistryAddr:    registryAddr,
-		RegistryService: ig.DomainManager,
+		RegistryAddr:     registryAddr,
+		RegistryService:  ig.DomainManager,
+		SchedulerService: ig.SchedulerService,
 	})
 
 	logrus.Info("Transport layer initialized")

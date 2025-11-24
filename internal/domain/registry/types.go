@@ -97,6 +97,49 @@ type Node struct {
 	UpdatedAt time.Time `json:"updated_at" yaml:"updated_at"`
 }
 
+// Clone 深拷贝节点信息，避免并发读写冲突
+func (n *Node) Clone() *Node {
+	if n == nil {
+		return nil
+	}
+	copy := *n
+	if n.ResourceTags != nil {
+		tags := *n.ResourceTags
+		copy.ResourceTags = &tags
+	}
+	if n.ResourceCapacity != nil {
+		copy.ResourceCapacity = n.ResourceCapacity.Clone()
+	}
+	return &copy
+}
+
+// Clone 深拷贝 ResourceCapacity
+func (rc *ResourceCapacity) Clone() *ResourceCapacity {
+	if rc == nil {
+		return nil
+	}
+	copy := &ResourceCapacity{}
+	if rc.Total != nil {
+		copy.Total = rc.Total.Clone()
+	}
+	if rc.Used != nil {
+		copy.Used = rc.Used.Clone()
+	}
+	if rc.Available != nil {
+		copy.Available = rc.Available.Clone()
+	}
+	return copy
+}
+
+// Clone 深拷贝 ResourceInfo
+func (ri *ResourceInfo) Clone() *ResourceInfo {
+	if ri == nil {
+		return nil
+	}
+	copy := *ri
+	return &copy
+}
+
 // Domain 资源域信息
 type Domain struct {
 	// ID 域的唯一标识符

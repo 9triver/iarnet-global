@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/9triver/iarnet-global/internal/domain/registry"
+	domainscheduler "github.com/9triver/iarnet-global/internal/domain/scheduler"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	registrypb "github.com/9triver/iarnet-global/internal/proto/registry"
+	schedulerpb "github.com/9triver/iarnet-global/internal/proto/scheduler"
 	registryrpc "github.com/9triver/iarnet-global/internal/transport/rpc/registry"
+	schedulerrpc "github.com/9triver/iarnet-global/internal/transport/rpc/scheduler"
 )
 
 // server RPC 服务器
@@ -48,6 +51,7 @@ func (rs *server) Stop() {
 type Options struct {
 	RegistryAddr       string
 	RegistryService    *registry.Manager
+	SchedulerService   domainscheduler.Service
 	RegistryServerOpts []grpc.ServerOption
 }
 
@@ -83,9 +87,12 @@ func (m *Manager) Start() error {
 		registryOpts := append([]grpc.ServerOption{}, m.Options.RegistryServerOpts...)
 		registryOpts = append(registryOpts, grpc.MaxRecvMsgSize(512*1024*1024))
 
-		// 启动 Registry 服务器
+		// 启动 Registry / Scheduler 服务器
 		registry, err := startServer(m.Options.RegistryAddr, registryOpts, func(s *grpc.Server) {
 			registrypb.RegisterServiceServer(s, registryrpc.NewServer(m.Options.RegistryService))
+			if m.Options.SchedulerService != nil {
+				schedulerpb.RegisterSchedulerServiceServer(s, schedulerrpc.NewServer(m.Options.SchedulerService))
+			}
 		})
 		if err != nil {
 			logrus.WithError(err).Error("failed to start registry server")

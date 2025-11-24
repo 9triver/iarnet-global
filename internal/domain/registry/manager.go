@@ -120,6 +120,20 @@ func (m *Manager) GetNodesByDomain(domainID DomainID) ([]*Node, error) {
 	return nodes, nil
 }
 
+// GetHeadNodes 获取所有 head 节点（返回副本以避免竞态）
+func (m *Manager) GetHeadNodes() []*Node {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	nodes := make([]*Node, 0)
+	for _, node := range m.nodes {
+		if node.IsHead {
+			nodes = append(nodes, node.Clone())
+		}
+	}
+	return nodes
+}
+
 // AddNode 添加节点
 func (m *Manager) AddNode(node *Node) error {
 	m.mu.Lock()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/9triver/iarnet-global/internal/config"
 	"github.com/9triver/iarnet-global/internal/domain/registry"
+	domainscheduler "github.com/9triver/iarnet-global/internal/domain/scheduler"
 	"github.com/9triver/iarnet-global/internal/intra/repository"
 	"github.com/9triver/iarnet-global/internal/transport/http"
 	"github.com/9triver/iarnet-global/internal/transport/rpc"
@@ -17,9 +18,10 @@ type IarnetGlobal struct {
 	Config *config.Config
 
 	// 领域服务
-	RegistryService registry.Service
-	DomainManager   *registry.Manager
-	DomainRepo      repository.DomainRepo
+	RegistryService  registry.Service
+	DomainManager    *registry.Manager
+	DomainRepo       repository.DomainRepo
+	SchedulerService domainscheduler.Service
 	// Transport 层
 	HTTPServer *http.Server
 	RPCManager *rpc.Manager
